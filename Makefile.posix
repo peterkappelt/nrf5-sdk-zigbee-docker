@@ -1,0 +1,2 @@
+GNU_INSTALL_ROOT = 
+GNU_PREFIX = arm-none-eabi
