@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         gcc_version:
-          - 8-2018-q4-major
+#          - 8-2018-q4-major
           - 9-2019-q4-major
           - 10-2020-q4-major
           - 10.3-2021.10
@@ -29,6 +29,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
 
       - uses: actions/setup-python@v4
         with:
@@ -60,26 +67,12 @@ jobs:
         id: docker_tag
         run: echo "tag=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sdk-${{ matrix.sdk_version }}-gcc-${{ matrix.gcc_version }}" >> $GITHUB_OUTPUT
 
-      - name: Build docker image
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          load: true
-          build-args: |
-            GCC_VERSION=${{ matrix.gcc_version }}
-            SDK_FOLDER=${{ steps.fetch_sdk.outputs.sdk_folder }}
-          tags: ${{ steps.docker_tag.outputs.tag }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Test gcc output
-        run: |
-          docker run --rm ${{ steps.docker_tag.outputs.tag }} arm-none-eabi-gcc -v
-
-      - name: Push docker image
+      - name: Build and push container image
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
+          platforms: linux/amd64,linux/arm64/v8
           build-args: |
             GCC_VERSION=${{ matrix.gcc_version }}
             SDK_FOLDER=${{ steps.fetch_sdk.outputs.sdk_folder }}
